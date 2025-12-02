@@ -137,13 +137,13 @@ printfinit(void)
 void 
 backtrace(void) {
   uint64 fp;
-  uint64 fg_page_bottom;
+  uint64 fp_page_bottom;
   uint64 ra;
 
   fp = r_fp();
-  fg_page_bottom = PGROUNDDOWN(fp);
+  fp_page_bottom = PGROUNDDOWN(fp);
 
-  while (PGROUNDDOWN(fp) == fg_page_bottom) {
+  while (PGROUNDDOWN(fp) == fp_page_bottom) {
     ra = *((uint64 *)(fp - 8));
     printf("%p\n", ra);
     fp = *((uint64 *)(fp - 16));
