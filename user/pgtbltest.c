@@ -27,7 +27,7 @@ main(void)
     if(child == 0){
       // tiến trình con
       int cpid1 = getpid();
-      int cpid2 = getpid();   // thay ugetpid -> getpid
+      int cpid2 = getpid();   
 
       if(cpid1 == cpid2){
         printf("child getpid: OK (pid=%d)\n", cpid1);

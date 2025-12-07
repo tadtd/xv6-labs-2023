@@ -101,7 +101,6 @@ sys_pgaccess(void)
     struct proc *p = myproc();
     pte_t *pte;
 
-    // argint/argaddr bên bạn là void => chỉ gọi để set giá trị
     argaddr(0, &va);
     argint(1, &npage);
     argaddr(2, &user_bitmap);
