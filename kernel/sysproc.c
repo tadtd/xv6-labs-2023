@@ -91,3 +91,49 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_pgaccess(void)
+{
+    uint64 va;              // địa chỉ bắt đầu
+    int npage;              // số page
+    uint64 user_bitmap;     // buffer trả về
+    struct proc *p = myproc();
+    pte_t *pte;
+
+    // argint/argaddr bên bạn là void => chỉ gọi để set giá trị
+    argaddr(0, &va);
+    argint(1, &npage);
+    argaddr(2, &user_bitmap);
+
+    // validate npage
+    if(npage <= 0 || npage > 256)
+        return -1;
+
+    // bắt đầu page phải căn chỉnh
+    va = PGROUNDDOWN(va);
+
+    char mask[32];             // 256 pages = 32 bytes
+    int nbytes = (npage + 7)/8;
+    memset(mask, 0, sizeof(mask));
+
+    for(int i = 0; i < npage; i++){
+        uint64 addr = va + i * PGSIZE;
+
+        pte = walk(p->pagetable, addr, 0);
+        if(!pte)
+            continue;
+
+        if(*pte & PTE_A){
+            mask[i/8] |= (1 << (i%8));
+            *pte &= ~PTE_A;       // clear bit
+        }
+    }
+
+    if(copyout(p->pagetable, user_bitmap, mask, nbytes) < 0)
+        return -1;
+
+    return 0;
+}
+
+

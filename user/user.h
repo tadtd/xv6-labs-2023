@@ -22,6 +22,9 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int pgaccess(void *va, int npage, void *bitmap);
+
+
 
 // ulib.c
 int stat(const char*, struct stat*);
