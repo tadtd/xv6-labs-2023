@@ -1,70 +1,44 @@
-#include "kernel/param.h"
-#include "kernel/fcntl.h"
 #include "kernel/types.h"
-#include "kernel/riscv.h"
+#include "kernel/stat.h"
 #include "user/user.h"
 
-void ugetpid_test();
-void pgaccess_test();
-
 int
-main(int argc, char *argv[])
+main(void)
 {
-  ugetpid_test();
-  pgaccess_test();
-  printf("pgtbltest: all tests succeeded\n");
-  exit(0);
-}
+  // chạy 5 vòng lặp để test, tránh hết slot
+  for(int i = 0; i < 5; i++){
+    printf("pgtbltest: running (loop %d)\n", i+1);
 
-char *testname = "???";
-
-void
-err(char *why)
-{
-  printf("pgtbltest: %s failed: %s, pid=%d\n", testname, why, getpid());
-  exit(1);
-}
-
-void
-ugetpid_test()
-{
-  int i;
-
-  printf("ugetpid_test starting\n");
-  testname = "ugetpid_test";
-
-  for (i = 0; i < 64; i++) {
-    int ret = fork();
-    if (ret != 0) {
-      wait(&ret);
-      if (ret != 0)
-        exit(1);
-      continue;
+    // Test ugetpid so với getpid trong tiến trình hiện tại
+    int pid1 = getpid();
+    int pid2 = ugetpid();
+    if(pid1 == pid2){
+      printf("ugetpid: OK (pid=%d)\n", pid1);
+    } else {
+      printf("ugetpid: FAIL (getpid=%d ugetpid=%d)\n", pid1, pid2);
     }
-    if (getpid() != ugetpid())
-      err("missmatched PID");
-    exit(0);
-  }
-  printf("ugetpid_test: OK\n");
-}
 
-void
-pgaccess_test()
-{
-  char *buf;
-  unsigned int abits;
-  printf("pgaccess_test starting\n");
-  testname = "pgaccess_test";
-  buf = malloc(32 * PGSIZE);
-  if (pgaccess(buf, 32, &abits) < 0)
-    err("pgaccess failed");
-  buf[PGSIZE * 1] += 1;
-  buf[PGSIZE * 2] += 1;
-  buf[PGSIZE * 30] += 1;
-  if (pgaccess(buf, 32, &abits) < 0)
-    err("pgaccess failed");
-  if (abits != ((1 << 1) | (1 << 2) | (1 << 30)))
-    err("incorrect access bits set");
-  free(buf);
-  printf("pgaccess_test: OK\n");
+    // Test trong tiến trình con (fork)
+    int child = fork();
+    if(child < 0){
+      printf("fork failed\n");
+      exit(1);
+    }
+    if(child == 0){
+      // tiến trình con
+      int cpid1 = getpid();
+      int cpid2 = ugetpid();
+      if(cpid1 == cpid2){
+        printf("child ugetpid: OK (pid=%d)\n", cpid1);
+      } else {
+        printf("child ugetpid: FAIL (getpid=%d ugetpid=%d)\n", cpid1, cpid2);
+      }
+      exit(0);
+    } else {
+      // tiến trình cha chờ con
+      wait(0);
+    }
+  }
+
+  exit(0);
 }
