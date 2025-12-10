@@ -23,6 +23,8 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int pgaccess(void *va, int npage, void *bitmap);
+int ugetpid(void);
+
 
 
 

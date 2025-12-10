@@ -134,5 +134,11 @@ sys_pgaccess(void)
 
     return 0;
 }
+uint64
+sys_ugetpid(void)
+{
+  return myproc()->pid;
+}
+
 
 

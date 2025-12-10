@@ -456,7 +456,7 @@ static void vmprint_rec(pagetable_t pagetable, int depth) {
     if (pte & PTE_V) { 
       uint64 pa = PTE2PA(pte);
         for (int d = 0; d < depth; d++) {
-        printf(".. ");
+        printf(" ..");
       }
       printf("%d: pte %p pa %p\n", i, pte, pa);
 
