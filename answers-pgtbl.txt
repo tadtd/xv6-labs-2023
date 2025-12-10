@@ -1,0 +1,34 @@
+** Which other xv6 system call(s) could be made faster using this shared page? Explain
+how.
+1. uptime()
+- Lý do: uptime() chỉ trả về số "ticks" kể từ khi hệ thống khởi động → giá trị này kernel đã biết và cập nhật mỗi timer interrupt.
+- Cách tăng tốc: Kernel có thể ghi giá trị ticks vào struct trong trang USYSCALL mỗi lần timer interrupt chạy. User chỉ đọc giá trị này trực tiếp mà không cần trap vào kernel.
+2. getppid()
+- Lý do: PID của parent process (ppid) là thông tin tĩnh, rất ít khi thay đổi.
+- Cách tăng tốc: Thêm trường ppid vào struct usyscall → kernel ghi trong quá trình fork hoặc khi p->parent thay đổi.
+User gọi ugetppid() chỉ cần đọc từ trang chia sẻ.
+3. time-related syscalls khác
+Ví dụ: 
+- rtime() (thời gian chạy)
+- stime()
+- ticks()
+  Tương tự uptime(), nếu dữ liệu đã có sẵn và kernel cập nhật định kỳ → ta có thể publish ra shared page.
+4. getuid(), getgid()
+- Lý do: UID/GID là thông tin cố định của process, không cần mỗi lần gọi phải trap vào kernel.
+- Cách tăng tốc: Kernel ghi UID/GID vào USYSCALL một lần khi tạo process.
+Những system call trên đều có đặc điểm chung:
+- Không thay đổi thường xuyên (hoặc kernel đã có sẵn dữ liệu).
+- Kernel có thể cập nhật dễ dàng vào trang chia sẻ.
+- Không cần bảo vệ đặc biệt → cho phép user đọc mà không gây rủi ro an toàn.
+Vì vậy, thay vì thực hiện trap → chuyển chế độ → tìm handler → trả kết quả → trở về user mode, user chỉ việc đọc struct trong bộ nhớ, giúp tiết kiệm rất nhiều chi phí.
+
+
+** Khi mình access (buf[PGSIZE * 1] += 1) trong `pgaccess_test`, cái gì set PTE_A vào PTE?
+- Bit PTE_A (Accessed) không phải do kernel set, mà được phần cứng RISC-V (MMU) tự động thiết lập.
+Khi chương trình user truy cập vào một trang bộ nhớ - ví dụ câu lệnh: buf[PGSIZE * 1] += 1;
+- CPU thực hiện load rồi store, và theo đặc tả RISC-V:
+ + Khi trang bị đọc hoặc ghi, hardware tự động set bit PTE_A.
+ + Khi có thao tác ghi, hardware còn set thêm PTE_D.
+- Do đó, trong pgaccess_test, sau khi truy cập vào trang, hardware sẽ tự động bật bit PTE_A, và syscall pgaccess() chỉ việc đọc lại PTE để biết trang nào đã được truy cập.
+Kết luận: Chính hardware RISC-V set PTE_A, không phải kernel hay code trong pgaccess().
+
